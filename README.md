@@ -12,37 +12,37 @@ DAG runs fetch -> parse -> AL-vs-random simulation -> summary report on:
   experimentally measured enrichment fitness.
 - **AAV2** capsid viability landscape (Ogden et al., Science 2019, FLIP
   mirror): 38,293 substitution variants over a 28-aa region, log-scale
-  viability score — a larger, harsher, partially epistatic landscape that
+  viability score, a larger partially epistatic landscape that
   includes stop-codon dead variants (`*`).
 
 ## The question
 
-This is the loop experimental science actually wants closed: label a small
+This is the loop experimental science wants closed: label a small
 random screen, fit a surrogate, let an acquisition function pick the next
 most informative batch, repeat under a fixed budget. The landscape is fully
-measured, so the oracle is ground truth — every acquisition decision can be
-scored against what the experiment would really have returned.
+measured, so the oracle is ground truth. Every acquisition decision is
+scored against what the experiment would have returned.
 
 ## Method
 
 - **Surrogate**: Gaussian process (RBF + white noise, fixed hyperparameters,
   normalized targets) over position-wise one-hot features. Alphabet and
   variant regex are per-dataset config (`GB1: 4x20`, `AAV: 28x21 incl. *`).
-- **Target transform** per dataset: GB1 fits on `log1p(fitness)` —
-  enrichment is heavy-tailed (mean 0.08, max 8.76); AAV's log-viability
+- **Target transform** per dataset: GB1 fits on `log1p(fitness)`,
+  since enrichment is heavy-tailed (mean 0.08, max 8.76). AAV's log-viability
   score is already symmetric -> `identity`.
 - **Acquisition**: UCB (`mean + kappa*std`, kappa=2); EI and greedy are
   implemented behind config.
 - **Schedule**: 96-variant random initial screen, then batches of 24 up to a
   480-experiment budget.
 - **Baseline**: random selection on the identical schedule, replicated over
-  20 seeds. Same initial distribution, same budget — the honest counterfactual.
+  20 seeds. Same initial distribution, same budget. The matched counterfactual.
 - **Metrics**: best-fitness-found curve, true top-100 discovery curve, AUBC
   (area under best curve, oracle-normalized), top-100 hit rate at budget.
 
 ## Result (committed in `results/summary.json`)
 
-Active policy replicated over **8 seeds** against a 20-seed random baseline —
+Active policy replicated over **8 seeds** against a 20-seed random baseline,
 same budget, same schedule, both distributions reported:
 
 | | Active (UCB-GP, 8 seeds) | Random (20 seeds) |
@@ -52,17 +52,17 @@ same budget, same schedule, both distributions reported:
 | true top-100 hits at budget, mean | **43.4** | 0.55 |
 | acquired variants with fitness > 1.0 | 81% (seed-13 trajectory) | ~4% of landscape |
 
-Reading it honestly: the policy **concentrates experiments on the functional
-region** — ~79x more true top-100 hits than random, and most trajectories
-(6/8) find the oracle-best variant within budget. The weakest seed still
+The policy **concentrates experiments on the functional
+region**, with ~79x more true top-100 hits than random, and 6 of 8 trajectories
+find the oracle-best variant within budget. The weakest seed still
 beats the random mean on AUBC, but trajectory variance is real (0.465..0.772)
-and the bands overlap at the low end — a single AL run is not a guarantee.
+and the bands overlap at the low end. A single AL run is not a guarantee.
 Per-trajectory metrics are in `results/summary.json` under
 `per_trajectory`.
 
 ## Replication: AAV2 capsid viability (`results/summary_aav.json`)
 
-Same code path, same experiment schedule, second landscape — dataset
+Same code path, same experiment schedule, second landscape. The dataset
 descriptor is the only thing that changes (`config/config_aav.yaml`).
 
 | | Active (UCB-GP, 8 seeds) | Random (20 seeds) |
@@ -71,22 +71,22 @@ descriptor is the only thing that changes (`config/config_aav.yaml`).
 | best fitness found, mean | **7.69** (oracle max 9.54) | 6.64 |
 | true top-100 hits at budget, mean | **11.9** | 1.5 |
 
-The honest version: the advantage **shrinks** on AAV. Top-100 hit
+The advantage **shrinks** on AAV. Top-100 hit
 enrichment stays strong (~8x), and every active trajectory's AUBC beats
-the random *mean*, but the bands genuinely overlap — the worst active
+the random *mean*, but the bands overlap. The worst active
 trajectory (0.543) is below the best random one (0.646), which never
 happened on GB1. Expected reasons: AAV is 38k variants vs 149k with a
 higher base rate of functional variants (~47% score > 0), so random
 screening catches more; and 588-dim one-hot over a rougher landscape is
 a harder GP regression than GB1's 80-dim near-orthogonal space. The
-replication is the point — a portfolio AL demo that only works on one
+replication is the point. A portfolio AL demo that only works on one
 friendly landscape isn't evidence of anything.
 
 ## Encoder ablation: ESM-2 vs one-hot on GB1 (`results/summary_gb1_esm2.json`)
 
-Same landscape, same schedule — only the feature space changes. Variants
+Same landscape, same schedule. Only the feature space changes. Variants
 are embedded by ESM-2 (`esm2_t6_8M`, mean-pooled) after substituting into
-the WT GB1 sequence at sites 38/39/40/53 — a bare 4-AA string carries no
+the WT GB1 sequence at sites 38/39/40/53, since a bare 4-AA string carries no
 signal for a protein LM. Requires `.[esm]` extras.
 
 | | one-hot + GP (8 seeds) | ESM-2 + GP (8 seeds) | Random (20 seeds) |
@@ -95,22 +95,22 @@ signal for a protein LM. Requires `.[esm]` extras.
 | best fitness found, mean | 8.24 | **8.31** | 5.06 |
 | top-100 hits at budget, mean | **43.4** | 39.2 | 0.55 |
 
-Honest read: ESM-2 does **not** beat one-hot on GB1 — and that's the
+ESM-2 does **not** beat one-hot on GB1, which is the
 expected answer. A 4-site combinatorial library is already fully
 specified by one-hot (every factor the GP needs is a measured coordinate),
 while mean-pooled embeddings of sequences differing in 4 of 56 residues
 are nearly isotropic (median pairwise distance 0.51; kernel scale was set
 to 0.4 from that diagnostic, not tuned on results). Where ESM-2 *does*
-improve: cross-seed consistency — AUBC spread tightens 4x (0.040 vs
+improve: cross-seed consistency. AUBC spread tightens 4x (0.040 vs
 0.100) and best-found is marginally higher. Embeddings would be the right
 encoder for landscapes spanning variable regions or requiring
 generalization beyond measured combinations; here they trade a little
 peak-seeking for a lot of stability.
 
-So we ran the same ablation on AAV, where embeddings *should* have an
-edge — the 28-aa region varies at many positions, ESM-2 distance is
-essentially decorrelated from Hamming (~0 spearman), and the median
-pairwise distance is a healthy 1.19 (vs 0.51 on GB1):
+The same ablation on AAV is where embeddings *should* have an
+edge. The 28-aa region varies at many positions, ESM-2 distance is
+decorrelated from Hamming (~0 spearman), and median pairwise distance
+is 1.19 (vs 0.51 on GB1):
 
 | AAV | one-hot + GP | ESM-2 + GP | Random |
 |---|---|---|---|
@@ -118,20 +118,20 @@ pairwise distance is a healthy 1.19 (vs 0.51 on GB1):
 | best fitness, mean | 7.69 | 6.88 | 6.64 |
 | top-100 hits, mean | **11.9** | 4.0 | 1.5 |
 
-ESM-2 on AAV performs at the random baseline — the AL advantage
+ESM-2 on AAV performs at the random baseline. The AL advantage
 disappears entirely. Mechanism: GP-UCB works through metric structure,
-and on these landscapes *Hamming distance is the informative metric* —
+and on these landscapes *Hamming distance is the informative metric*:
 fitness correlates with mutation count/composition. Mean-pooled ESM-2
-embeddings deliberately smooth over exactly that structure (that's what
+embeddings smooth over that structure by design (it is what
 makes them generalize for property prediction, and what makes them
 metrically useless for nearest-neighbor-ish landscape exploitation).
 One-hot is the right encoder for oracle-evaluated combinatorial AL;
 embeddings would earn their keep on tasks needing transfer across
-proteins or unmeasured regions — which an all-measured oracle cannot
+proteins or unmeasured regions, which an all-measured oracle cannot
 test. Both ablations committed: `summary_gb1_esm2.json`,
 `summary_aav_esm2.json`.
 
-## Debugging trail (kept, it's the point)
+## Debugging trail
 
 The first run reported active *worse* than random (AUBC 0.167, zero top-100
 hits, best found frozen at the initial draw). Traced to two failures:
@@ -145,8 +145,8 @@ hits, best found frozen at the initial draw). Traced to two failures:
 
 Fix: fixed hyperparameters matched to the feature metric + log1p target
 transform. The failure mode is documented because silent-NaN acquisition is
-exactly the kind of bug that produces *plausible-looking* wrong results —
-the only tell was the frozen best-fitness curve.
+the kind of bug that produces *plausible-looking* wrong results.
+The only tell was the frozen best-fitness curve.
 
 ## Caveats
 
@@ -175,7 +175,7 @@ gitignored).
 FLIP `splits/gb1/four_mutations_full_data.csv.zip` (CC BY 4.0; extends Wu et
 al., eLife 2016 supplement) and `splits/aav/full_data.csv.zip` (Ogden et
 al., Science 2019). AAV parsing keeps the 28-aa substitution subset of the
-28-aa mutated region including `*` stops — indel/other-length rows are
+28-aa mutated region including `*` stops. Indel/other-length rows are
 dropped with a logged count (245,716 of 284,009; the dropped rows are
 structural variants outside the fixed-width substitution landscape this
 encoder covers). Downloaded zips are gitignored; parsed parquets are

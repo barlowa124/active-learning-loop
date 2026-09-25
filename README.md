@@ -31,7 +31,7 @@ scored against what the experiment would have returned.
 - **Target transform** per dataset: GB1 fits on `log1p(fitness)`,
   since enrichment is heavy-tailed (mean 0.08, max 8.76). AAV's log-viability
   score is already symmetric -> `identity`.
-- **Acquisition**: UCB (`mean + kappa*std`, kappa=2); EI and greedy are
+- **Acquisition**: UCB (`mean + kappa*std`, kappa=2). EI and greedy are
   implemented behind config.
 - **Schedule**: 96-variant random initial screen, then batches of 24 up to a
   480-experiment budget.
@@ -77,7 +77,7 @@ the random *mean*, but the bands overlap. The worst active
 trajectory (0.543) is below the best random one (0.646), which never
 happened on GB1. Expected reasons: AAV is 38k variants vs 149k with a
 higher base rate of functional variants (~47% score > 0), so random
-screening catches more; and 588-dim one-hot over a rougher landscape is
+screening catches more. The 588-dim one-hot over a rougher landscape is
 a harder GP regression than GB1's 80-dim near-orthogonal space. The
 replication is the point. A portfolio AL demo that only works on one
 friendly landscape isn't evidence of anything.
@@ -104,7 +104,7 @@ to 0.4 from that diagnostic, not tuned on results). Where ESM-2 *does*
 improve: cross-seed consistency. AUBC spread tightens 4x (0.040 vs
 0.100) and best-found is marginally higher. Embeddings would be the right
 encoder for landscapes spanning variable regions or requiring
-generalization beyond measured combinations; here they trade a little
+generalization beyond measured combinations. Here they trade a little
 peak-seeking for a lot of stability.
 
 The same ablation on AAV is where embeddings *should* have an
@@ -150,9 +150,9 @@ The only tell was the frozen best-fitness curve.
 
 ## Caveats
 
-- Oracle = noise-free measured values; real experiments add assay noise the
+- Oracle = noise-free measured values. Real experiments add assay noise the
   surrogate would have to absorb.
-- One-hot encoding sees sites, not structure; sequence-embedding encoders
+- One-hot encoding sees sites, not structure. Sequence-embedding encoders
   (e.g., ESM-2) are the natural upgrade behind the same interface.
 - Greedy top-k batch selection ignores batch diversity.
 
@@ -178,5 +178,5 @@ al., Science 2019). AAV parsing keeps the 28-aa substitution subset of the
 28-aa mutated region including `*` stops. Indel/other-length rows are
 dropped with a logged count (245,716 of 284,009; the dropped rows are
 structural variants outside the fixed-width substitution landscape this
-encoder covers). Downloaded zips are gitignored; parsed parquets are
+encoder covers). Downloaded zips are gitignored. Parsed parquets are
 regenerable intermediates.

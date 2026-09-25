@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from al_loop.config import load_config
+from al_loop.config import config_path, load_config
 from al_loop.provenance import write_manifest
 
 
@@ -133,6 +133,7 @@ def main(records_path: str, landscape_path: str, out_json: str, out_png: str):
     write_manifest(
         str(Path(out_json).parent / manifest_name),
         inputs=[records_path, landscape_path],
+        config_path=str(config_path()),
     )
     print(
         f"active AUBC {result['active']['aubc_mean']:.3f}±"

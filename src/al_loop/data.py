@@ -30,7 +30,8 @@ def fetch_raw(url: str, out_zip: str) -> Path:
     return out
 
 
-def parse_landscape(zip_path: str, variant_col: str, fitness_col: str) -> pd.DataFrame:
+def parse_landscape(zip_path: str, variant_col: str, fitness_col: str,
+                    variant_regex: str) -> pd.DataFrame:
     with zipfile.ZipFile(zip_path) as z:
         names = [n for n in z.namelist() if n.endswith(".csv")]
         if len(names) != 1:
@@ -45,12 +46,12 @@ def parse_landscape(zip_path: str, variant_col: str, fitness_col: str) -> pd.Dat
     out = df[[variant_col, fitness_col]].dropna().drop_duplicates(variant_col)
     out.columns = ["variant", "fitness"]
     out["fitness"] = out["fitness"].astype(float)
-    # Stop-codon / ambiguous variants can't be one-hot encoded over the
-    # standard alphabet; drop them and say how many.
-    canonical = out["variant"].str.fullmatch(r"[ACDEFGHIKLMNPQRSTVWY]{4}")
+    # variants outside the declared alphabet/length can't be one-hot
+    # encoded (indels, ambiguous residues); drop them and say how many.
+    canonical = out["variant"].str.fullmatch(variant_regex)
     n_dropped = int((~canonical).sum())
     if n_dropped:
-        print(f"dropping {n_dropped} non-canonical variants (stop/ambiguous)")
+        print(f"dropping {n_dropped} variants outside {variant_regex}")
     return out[canonical].reset_index(drop=True)
 
 
@@ -58,7 +59,8 @@ def main(zip_path: str, out_parquet: str):
     cfg = load_config()
     fetch_raw(cfg["dataset"]["url"], zip_path)
     df = parse_landscape(
-        zip_path, cfg["dataset"]["variant_col"], cfg["dataset"]["fitness_col"]
+        zip_path, cfg["dataset"]["variant_col"], cfg["dataset"]["fitness_col"],
+        cfg["dataset"]["variant_regex"],
     )
     Path(out_parquet).parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(out_parquet, index=False)

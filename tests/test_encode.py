@@ -27,3 +27,9 @@ def test_one_hot_rejects_bad_input():
         one_hot(pd.Series(["VDG*"]))
     with pytest.raises(ValueError, match="inconsistent"):
         one_hot(pd.Series(["VDGV", "AAA"]))
+
+
+def test_one_hot_extended_alphabet_accepts_stop():
+    # AAV landscape keeps '*' (stop) as a real measured dead variant
+    X = one_hot(pd.Series(["VDGV", "V*GV"]), alphabet=AA_ALPHABET + "*")
+    assert X.shape == (2, 4 * 21)

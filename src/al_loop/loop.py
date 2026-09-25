@@ -32,16 +32,25 @@ def _snapshot(labeled: set, y: np.ndarray, top_set: set) -> dict:
     }
 
 
-def run_active(X, y, exp, sur, acq, top_set, seed=None):
+def apply_transform(y, transform: str):
+    """Model-space fitness transform. GB1's enrichment is a heavy-tailed
+    ratio (log1p); AAV's log-viability score is already symmetric
+    (identity). Reported metrics stay on the raw scale."""
+    if transform == "log1p":
+        return np.log1p(y)
+    if transform == "identity":
+        return y
+    raise ValueError(f"unknown transform {transform!r}")
+
+
+def run_active(X, y, exp, sur, acq, top_set, seed=None,
+               transform="log1p"):
     """One AL trajectory. Returns (round snapshots, ordered pick indices)."""
     rng = np.random.default_rng(exp["seed"] if seed is None else seed)
     labeled = set(rng.choice(len(X), size=exp["n_init"], replace=False).tolist())
     picks = sorted(labeled)
     records = [_snapshot(labeled, y, top_set)]
-    # Surrogate sees log-enrichment: fitness is a heavy-tailed selection
-    # ratio (mean ~0.08, max ~8.8); on the raw scale the tail dominates and
-    # GP optimization degenerates. Reported metrics stay on the raw scale.
-    y_model = np.log1p(y)
+    y_model = apply_transform(y, transform)
     while len(labeled) < exp["budget"]:
         lab = np.array(sorted(labeled))
         unl = np.array([i for i in range(len(X)) if i not in labeled])
@@ -79,7 +88,8 @@ def main(in_parquet: str, out_records: str, out_picks: str):
     cfg = load_config()
     exp, sur, acq = cfg["experiment"], cfg["surrogate"], cfg["acquisition"]
     df = pd.read_parquet(in_parquet)
-    X, y = one_hot(df["variant"]), df["fitness"].to_numpy()
+    X, y = one_hot(df["variant"], cfg["dataset"]["alphabet"]), \
+        df["fitness"].to_numpy()
     top_set = set(np.argsort(-y)[: cfg["evaluation"]["top_k"]].tolist())
 
     # Active policy is replicated over seeds too — a single trajectory vs a
@@ -89,7 +99,9 @@ def main(in_parquet: str, out_records: str, out_picks: str):
     best_last = []
     for s in range(n_active):
         seed = exp["seed"] + 1000 * s
-        recs, picks = run_active(X, y, exp, sur, acq, top_set, seed=seed)
+        recs, picks = run_active(X, y, exp, sur, acq, top_set, seed=seed,
+                                 transform=cfg["dataset"].get("transform",
+                                                              "log1p"))
         for r in recs:
             rows.append({"strategy": f"active_{s}", **r})
         best_last.append(recs[-1]["best_fitness"])

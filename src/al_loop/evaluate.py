@@ -129,7 +129,11 @@ def main(records_path: str, landscape_path: str, out_json: str, out_png: str):
     with open(out_json, "w") as f:
         json.dump(result, f, indent=2, allow_nan=False)
     plot_curves(records, y_max, out_png)
-    write_manifest("results/provenance.json", inputs=[records_path, landscape_path])
+    manifest_name = "provenance" + Path(out_json).stem.removeprefix("summary") + ".json"
+    write_manifest(
+        str(Path(out_json).parent / manifest_name),
+        inputs=[records_path, landscape_path],
+    )
     print(
         f"active AUBC {result['active']['aubc_mean']:.3f}±"
         f"{result['active']['aubc_std']:.3f} vs random "

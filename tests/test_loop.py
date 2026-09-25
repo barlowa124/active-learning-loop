@@ -53,3 +53,14 @@ def test_active_finds_optimum_on_easy_landscape():
     top = {int(np.argmax(Y))}
     records, _ = run_active(X, Y, EXP, SUR, ACQ, top)
     assert records[-1]["top_hits_found"] == 1
+
+
+def test_apply_transform():
+    from al_loop.loop import apply_transform
+    y = np.array([0.0, 1.0, np.e - 1])
+    assert np.allclose(apply_transform(y, "log1p"), [0, np.log(2), 1])
+    # AAV scores are negative-heavy; identity keeps them as-is
+    neg = np.array([-11.2, -1.4, 9.5])
+    assert np.array_equal(apply_transform(neg, "identity"), neg)
+    with pytest.raises(ValueError, match="unknown transform"):
+        apply_transform(y, "bogus")

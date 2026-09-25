@@ -7,6 +7,9 @@ dataset:
   url: "https://github.com/J-SNACKKB/FLIP/raw/main/splits/gb1/four_mutations_full_data.csv.zip"
   variant_col: "Variants"     # 4-AA combo string, e.g. VDGV
   fitness_col: "Fitness"
+  variant_regex: "[ACDEFGHIKLMNPQRSTVWY]{4}"
+  alphabet: "ACDEFGHIKLMNPQRSTVWY"
+  transform: "log1p"          # surrogate sees log-enrichment (heavy tail)
 
 experiment:
   n_init: 96          # initial random screen (~one 96-well plate)

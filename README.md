@@ -4,10 +4,16 @@ Simulated active-learning experiment selection over a **real, fully measured
 protein fitness landscape**: does a surrogate-model-driven loop find
 high-fitness variants with fewer experiments than random screening?
 
-**Status: working demonstration.** Snakemake DAG runs fetch -> parse ->
-AL-vs-random simulation -> summary report on the GB1 four-site combinatorial
-landscape (Wu et al., eLife 2016, via the FLIP mirror): 149,361 variants at
-sites V39/D40/G41/V54 with experimentally measured enrichment fitness.
+**Status: working demonstration, replicated on two landscapes.** Snakemake
+DAG runs fetch -> parse -> AL-vs-random simulation -> summary report on:
+
+- **GB1** four-site combinatorial landscape (Wu et al., eLife 2016, via the
+  FLIP mirror): 149,361 variants at sites V39/D40/G41/V54 with
+  experimentally measured enrichment fitness.
+- **AAV2** capsid viability landscape (Ogden et al., Science 2019, FLIP
+  mirror): 38,293 substitution variants over a 28-aa region, log-scale
+  viability score — a larger, harsher, partially epistatic landscape that
+  includes stop-codon dead variants (`*`).
 
 ## The question
 
@@ -20,8 +26,11 @@ scored against what the experiment would really have returned.
 ## Method
 
 - **Surrogate**: Gaussian process (RBF + white noise, fixed hyperparameters,
-  normalized targets) over position-wise one-hot features (4 sites x 20 AAs).
-  Fit on `log1p(fitness)` — enrichment is heavy-tailed (mean 0.08, max 8.76).
+  normalized targets) over position-wise one-hot features. Alphabet and
+  variant regex are per-dataset config (`GB1: 4x20`, `AAV: 28x21 incl. *`).
+- **Target transform** per dataset: GB1 fits on `log1p(fitness)` —
+  enrichment is heavy-tailed (mean 0.08, max 8.76); AAV's log-viability
+  score is already symmetric -> `identity`.
 - **Acquisition**: UCB (`mean + kappa*std`, kappa=2); EI and greedy are
   implemented behind config.
 - **Schedule**: 96-variant random initial screen, then batches of 24 up to a
@@ -50,6 +59,28 @@ beats the random mean on AUBC, but trajectory variance is real (0.465..0.772)
 and the bands overlap at the low end — a single AL run is not a guarantee.
 Per-trajectory metrics are in `results/summary.json` under
 `per_trajectory`.
+
+## Replication: AAV2 capsid viability (`results/summary_aav.json`)
+
+Same code path, same experiment schedule, second landscape — dataset
+descriptor is the only thing that changes (`config/config_aav.yaml`).
+
+| | Active (UCB-GP, 8 seeds) | Random (20 seeds) |
+|---|---|---|
+| AUBC | **0.604 ± 0.034** | 0.524 ± 0.076 |
+| best fitness found, mean | **7.69** (oracle max 9.54) | 6.64 |
+| true top-100 hits at budget, mean | **11.9** | 1.5 |
+
+The honest version: the advantage **shrinks** on AAV. Top-100 hit
+enrichment stays strong (~8x), and every active trajectory's AUBC beats
+the random *mean*, but the bands genuinely overlap — the worst active
+trajectory (0.543) is below the best random one (0.646), which never
+happened on GB1. Expected reasons: AAV is 38k variants vs 149k with a
+higher base rate of functional variants (~47% score > 0), so random
+screening catches more; and 588-dim one-hot over a rougher landscape is
+a harder GP regression than GB1's 80-dim near-orthogonal space. The
+replication is the point — a portfolio AL demo that only works on one
+friendly landscape isn't evidence of anything.
 
 ## Debugging trail (kept, it's the point)
 
@@ -83,13 +114,20 @@ the only tell was the frozen best-fitness curve.
 PYTHONPATH=src .venv/bin/python -m pytest tests/ -q
 ```
 
-`AL_CONFIG` env var selects an alternate config (same convention as the
-other repos). Results: `results/summary.json`, `results/curves.png`,
-`results/provenance.json`; per-round records and the exact acquisition
-order the policy chose are in `data/processed/` (regenerable, gitignored).
+`AL_CONFIG` env var selects an alternate config; `config/config_aav.yaml`
+is the AAV descriptor used by the `*_aav` Snakefile rules. Results:
+`results/summary{,_aav}.json`, `results/curves{,_aav}.png`,
+`results/provenance{,_aav}.json`; per-round records and the exact
+acquisition order the policy chose are in `data/processed/` (regenerable,
+gitignored).
 
 ## Data
 
 FLIP `splits/gb1/four_mutations_full_data.csv.zip` (CC BY 4.0; extends Wu et
-al., eLife 2016 supplement). Downloaded zip is gitignored; the parsed
-variant/fitness parquet is a regenerable intermediate.
+al., eLife 2016 supplement) and `splits/aav/full_data.csv.zip` (Ogden et
+al., Science 2019). AAV parsing keeps the 28-aa substitution subset of the
+28-aa mutated region including `*` stops — indel/other-length rows are
+dropped with a logged count (245,716 of 284,009; the dropped rows are
+structural variants outside the fixed-width substitution landscape this
+encoder covers). Downloaded zips are gitignored; parsed parquets are
+regenerable intermediates.

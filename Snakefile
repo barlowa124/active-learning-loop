@@ -6,6 +6,8 @@ rule all:
     input:
         "results/summary.json",
         "results/curves.png",
+        "results/summary_aav.json",
+        "results/curves_aav.png",
 
 
 rule fetch:
@@ -45,4 +47,51 @@ rule report:
         "results/curves.png",
     shell:
         "{PP} {PY} -m al_loop.evaluate "
+        "{input.records} {input.landscape} {output[0]} {output[1]}"
+
+
+# --- second landscape: AAV2 capsid viability (replication, not re-tuning) ---
+# Identical experiment schedule; only the dataset descriptor differs.
+
+AAV_CFG = "config/config_aav.yaml"
+
+
+rule fetch_aav:
+    output:
+        "data/raw/aav_full.csv.zip",
+    shell:
+        "AL_CONFIG={AAV_CFG} {PP} {PY} -c \"from al_loop.data import fetch_raw; "
+        "from al_loop.config import load_config; "
+        "fetch_raw(load_config()['dataset']['url'], '{output}')\""
+
+
+rule prepare_aav:
+    input:
+        rules.fetch_aav.output,
+    output:
+        "data/processed/aav.parquet",
+    shell:
+        "AL_CONFIG={AAV_CFG} {PP} {PY} -m al_loop.data {input} {output}"
+
+
+rule run_aav:
+    input:
+        rules.prepare_aav.output,
+    output:
+        records="data/processed/records_aav.parquet",
+        picks="data/processed/active_picks_aav.parquet",
+    shell:
+        "AL_CONFIG={AAV_CFG} {PP} {PY} -m al_loop.loop "
+        "{input} {output.records} {output.picks}"
+
+
+rule report_aav:
+    input:
+        records=rules.run_aav.output.records,
+        landscape=rules.prepare_aav.output,
+    output:
+        "results/summary_aav.json",
+        "results/curves_aav.png",
+    shell:
+        "AL_CONFIG={AAV_CFG} {PP} {PY} -m al_loop.evaluate "
         "{input.records} {input.landscape} {output[0]} {output[1]}"

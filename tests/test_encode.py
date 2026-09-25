@@ -33,3 +33,28 @@ def test_one_hot_extended_alphabet_accepts_stop():
     # AAV landscape keeps '*' (stop) as a real measured dead variant
     X = one_hot(pd.Series(["VDGV", "V*GV"]), alphabet=AA_ALPHABET + "*")
     assert X.shape == (2, 4 * 21)
+
+
+def test_apply_context_substitutes_sites():
+    from al_loop.encode import apply_context
+    wt = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE"
+    sites = [38, 39, 40, 53]
+    assert "".join(wt[i] for i in sites) == "VDGV"
+    out = apply_context("AAAA", wt, sites)
+    assert len(out) == len(wt)
+    assert "".join(out[i] for i in sites) == "AAAA"
+    # positions outside the sites are untouched
+    assert out[:38] == wt[:38]
+    with pytest.raises(ValueError):
+        apply_context("AAA", wt, sites)
+
+
+def test_build_features_dispatch_and_cache(tmp_path):
+    import numpy as np
+    from al_loop.encode import build_features
+
+    variants = pd.Series(["VDGV", "AAAA"])
+    X = build_features(variants, {"kind": "onehot"})
+    assert X.shape == (2, 80)
+    with pytest.raises(ValueError, match="unknown encoder"):
+        build_features(variants, {"kind": "bogus"})

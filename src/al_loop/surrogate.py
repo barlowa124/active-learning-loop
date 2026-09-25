@@ -10,7 +10,8 @@ rf: RandomForestRegressor; uncertainty = std across trees. Cheaper and
 import numpy as np
 
 
-def fit_predict(X_train, y_train, X_pool, kind: str):
+def fit_predict(X_train, y_train, X_pool, kind: str,
+                length_scale: float = 1.5):
     """Return (mean, std) surrogate predictions over the unlabeled pool."""
     if kind == "gp":
         from sklearn.gaussian_process import GaussianProcessRegressor
@@ -19,9 +20,12 @@ def fit_predict(X_train, y_train, X_pool, kind: str):
         # Fixed hyperparameters: per-round kernel optimization degenerates on
         # this spiky landscape (bounds-hitting, matmul overflow -> NaN scores).
         # length_scale ~1.5 matches the one-hot metric: variants differing at
-        # one site are sqrt(2) apart, at all four sites sqrt(8).
+        # one site are sqrt(2) apart, at all four sites sqrt(8). Embedding
+        # encoders need their own scale — set per-config from a measured
+        # distance diagnostic, not tuned on results.
         gp = GaussianProcessRegressor(
-            kernel=RBF(length_scale=1.5) + WhiteKernel(noise_level=0.1),
+            kernel=RBF(length_scale=length_scale)
+            + WhiteKernel(noise_level=0.1),
             normalize_y=True,
             optimizer=None,
         )

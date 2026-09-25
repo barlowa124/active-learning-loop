@@ -19,7 +19,7 @@ import pandas as pd
 
 from al_loop.acquisition import acquire
 from al_loop.config import load_config
-from al_loop.encode import one_hot
+from al_loop.encode import build_features
 from al_loop.surrogate import fit_predict
 
 
@@ -54,7 +54,10 @@ def run_active(X, y, exp, sur, acq, top_set, seed=None,
     while len(labeled) < exp["budget"]:
         lab = np.array(sorted(labeled))
         unl = np.array([i for i in range(len(X)) if i not in labeled])
-        mean, std = fit_predict(X[lab], y_model[lab], X[unl], sur["kind"])
+        mean, std = fit_predict(
+            X[lab], y_model[lab], X[unl], sur["kind"],
+            length_scale=sur.get("length_scale", 1.5),
+        )
         scores = acquire(
             mean,
             std,
@@ -88,7 +91,11 @@ def main(in_parquet: str, out_records: str, out_picks: str):
     cfg = load_config()
     exp, sur, acq = cfg["experiment"], cfg["surrogate"], cfg["acquisition"]
     df = pd.read_parquet(in_parquet)
-    X, y = one_hot(df["variant"], cfg["dataset"]["alphabet"]), \
+    enc = cfg.get("encoder") or {
+        "kind": "onehot", "alphabet": cfg["dataset"]["alphabet"]
+    }
+    stem = str(Path(in_parquet).with_suffix(""))
+    X, y = build_features(df["variant"], enc, cache_stem=stem), \
         df["fitness"].to_numpy()
     top_set = set(np.argsort(-y)[: cfg["evaluation"]["top_k"]].tolist())
 

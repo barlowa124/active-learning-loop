@@ -82,6 +82,31 @@ a harder GP regression than GB1's 80-dim near-orthogonal space. The
 replication is the point — a portfolio AL demo that only works on one
 friendly landscape isn't evidence of anything.
 
+## Encoder ablation: ESM-2 vs one-hot on GB1 (`results/summary_gb1_esm2.json`)
+
+Same landscape, same schedule — only the feature space changes. Variants
+are embedded by ESM-2 (`esm2_t6_8M`, mean-pooled) after substituting into
+the WT GB1 sequence at sites 38/39/40/53 — a bare 4-AA string carries no
+signal for a protein LM. Requires `.[esm]` extras.
+
+| | one-hot + GP (8 seeds) | ESM-2 + GP (8 seeds) | Random (20 seeds) |
+|---|---|---|---|
+| AUBC | 0.672 ± 0.100 | 0.621 ± **0.040** | 0.373 ± 0.107 |
+| best fitness found, mean | 8.24 | **8.31** | 5.06 |
+| top-100 hits at budget, mean | **43.4** | 39.2 | 0.55 |
+
+Honest read: ESM-2 does **not** beat one-hot on GB1 — and that's the
+expected answer. A 4-site combinatorial library is already fully
+specified by one-hot (every factor the GP needs is a measured coordinate),
+while mean-pooled embeddings of sequences differing in 4 of 56 residues
+are nearly isotropic (median pairwise distance 0.51; kernel scale was set
+to 0.4 from that diagnostic, not tuned on results). Where ESM-2 *does*
+improve: cross-seed consistency — AUBC spread tightens 4x (0.040 vs
+0.100) and best-found is marginally higher. Embeddings would be the right
+encoder for landscapes spanning variable regions or requiring
+generalization beyond measured combinations; here they trade a little
+peak-seeking for a lot of stability.
+
 ## Debugging trail (kept, it's the point)
 
 The first run reported active *worse* than random (AUBC 0.167, zero top-100

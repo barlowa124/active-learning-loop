@@ -1,0 +1,27 @@
+{
+  "config": {
+    "surrogate": "gp",
+    "acquisition": "ucb",
+    "n_init": 96,
+    "batch_size": 24,
+    "budget": 480,
+    "top_k": 100
+  },
+  "landscape": {
+    "n_variants": 149361,
+    "oracle_max_fitness": 8.76196565571
+  },
+  "active": {
+    "aubc": 0.4652767103579686,
+    "best_fitness": 5.77203220934,
+    "top_hits_at_budget": 9,
+    "top_hit_rate": 0.09
+  },
+  "random": {
+    "n_seeds": 20,
+    "aubc_mean": 0.37340482768148153,
+    "aubc_std": 0.10705468858141952,
+    "best_fitness_mean": 5.061821876861,
+    "top_hits_mean": 0.55
+  }
+}

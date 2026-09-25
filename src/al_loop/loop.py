@@ -1,6 +1,6 @@
 """The experiment-selection simulation.
 
-Oracle model: `y` contains *measured* fitness for every variant — querying a
+Oracle model: `y` contains *measured* fitness for every variant. Querying a
 variant costs one experiment and reveals its true value. The active loop
 starts from `n_init` random labels and iterates: fit surrogate -> score
 unlabeled pool with the acquisition function -> measure the top `batch_size`
@@ -8,8 +8,8 @@ candidates -> repeat until `budget` experiments are spent.
 
 The random baseline follows the identical schedule but picks candidates
 uniformly, replicated `n_random_seeds` times for a distribution. This is
-the honest counterfactual: same budget and schedule, no model. (Each
-trajectory — active or random — draws its own initial screen; the
+the matched counterfactual: same budget and schedule, no model. (Each
+trajectory, active or random, draws its own initial screen. The
 multi-seed replication is what makes the comparison fair.)
 """
 
@@ -101,7 +101,7 @@ def main(in_parquet: str, out_records: str, out_picks: str):
         df["fitness"].to_numpy()
     top_set = set(np.argsort(-y)[: cfg["evaluation"]["top_k"]].tolist())
 
-    # Active policy is replicated over seeds too — a single trajectory vs a
+    # Active policy is replicated over seeds too. A single trajectory vs a
     # 20-seed random distribution was the old comparison and it wasn't fair.
     n_active = exp.get("n_active_seeds", 1)
     rows, first_picks = [], None
@@ -125,7 +125,7 @@ def main(in_parquet: str, out_records: str, out_picks: str):
     if first_picks is None:
         raise ValueError("n_active_seeds must be >= 1 to record picks")
     # What the seed-13 active trajectory chose to measure, in acquisition
-    # order — inspectable evidence of the policy's decisions.
+    # order, inspectable evidence of the policy's decisions.
     picks = df.iloc[first_picks].copy()
     picks["acquisition_order"] = range(len(picks))
     picks["initial_screen"] = picks["acquisition_order"] < exp["n_init"]

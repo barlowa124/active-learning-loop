@@ -5,11 +5,11 @@ Metrics:
 - top-k hit curve: how many of the landscape's true top-k variants were
   discovered vs experiments spent
 - AUBC: area under the best-fitness curve (normalized by oracle max and
-  budget) — a single scalar "learning speed" summary per trajectory
+  budget), a single scalar "learning speed" summary per trajectory
 - hit rate @ budget: fraction of true top-k found when the budget is spent
 
 Random baseline is aggregated over seeds with mean +/- std bands; the
-active policy is a single seeded trajectory (reported honestly as such).
+active policy is a single seeded trajectory (reported as such).
 """
 
 import sys

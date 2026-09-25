@@ -21,7 +21,7 @@ def fit_predict(X_train, y_train, X_pool, kind: str,
         # this spiky landscape (bounds-hitting, matmul overflow -> NaN scores).
         # length_scale ~1.5 matches the one-hot metric: variants differing at
         # one site are sqrt(2) apart, at all four sites sqrt(8). Embedding
-        # encoders need their own scale — set per-config from a measured
+        # encoders need their own scale, set per-config from a measured
         # distance diagnostic, not tuned on results.
         gp = GaussianProcessRegressor(
             kernel=RBF(length_scale=length_scale)

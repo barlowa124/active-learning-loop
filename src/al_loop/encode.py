@@ -97,7 +97,7 @@ def build_features(variants: pd.Series, encoder_cfg: dict,
         npy = Path(f"{cache_stem}_esm2.npy")
         key_f = Path(f"{cache_stem}_esm2.key")
         # the key must cover every input to the embedding: variant list
-        # AND encoder params — a changed model/context with an unchanged
+        # AND encoder params. A changed model/context with an unchanged
         # variant list must not silently reuse stale embeddings
         key = hashlib.sha256(
             (json.dumps(encoder_cfg, sort_keys=True)

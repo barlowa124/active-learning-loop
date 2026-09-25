@@ -1,16 +1,16 @@
 {
-  "created_utc": "2026-09-25T00:11:31.020598+00:00",
-  "git": "unknown",
+  "created_utc": "2026-09-25T13:07:32.593807+00:00",
+  "git": "3646ae5ab6+dirty",
   "versions": {
     "numpy": "2.0.2",
     "pandas": "2.3.3",
     "scikit-learn": "1.6.1"
   },
-  "config_sha256": "6ffef010358f674d8b9c4d0e0cd7306788817af680d60d4401b42e284517247c",
+  "config_sha256": "28cc2424bf7715ca8e62bf0160c3688d7b609ed18486a24e8a13461c0b3b0b93",
   "inputs": [
     {
       "path": "data/processed/records.parquet",
-      "sha256": "b2c3c5d2978b9cdfb8c0b65d4ea01b11c4bc3369c99a94f099c06a42a2535cbd"
+      "sha256": "4af7130c51a6c94c8ffca11853286cb22361d647ef16f882a851b08875c430e3"
     },
     {
       "path": "data/processed/gb1.parquet",

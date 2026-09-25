@@ -54,22 +54,23 @@ def summarize(records: pd.DataFrame, y_max: float, top_k: int, budget: int):
 def plot_curves(records: pd.DataFrame, y_max: float, out_png: str):
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
     rand = records[records.strategy.str.startswith("random")]
-    active = records[records.strategy == "active"]
+    active = records[records.strategy.str.startswith("active")]
     for ax, col, title in zip(
         axes,
         ["best_fitness", "top_hits_found"],
         ["best measured fitness found", "true top-100 variants discovered"],
     ):
-        pivot = rand.pivot_table(
-            index="n_experiments", columns="strategy", values=col
-        ).sort_index()
-        m, s = pivot.mean(axis=1), pivot.std(axis=1)
-        ax.plot(m.index, m, color="gray", label=f"random (n={pivot.shape[1]})")
-        ax.fill_between(m.index, m - s, m + s, color="gray", alpha=0.25)
-        a = active.sort_values("n_experiments")
-        ax.plot(
-            a["n_experiments"], a[col], color="crimson", label="active (UCB-GP)"
-        )
+        for subset, color, name in (
+            (rand, "gray", "random"),
+            (active, "crimson", "active (UCB-GP)"),
+        ):
+            pivot = subset.pivot_table(
+                index="n_experiments", columns="strategy", values=col
+            ).sort_index()
+            m, s = pivot.mean(axis=1), pivot.std(axis=1)
+            ax.plot(m.index, m, color=color,
+                    label=f"{name} (n={pivot.shape[1]})")
+            ax.fill_between(m.index, m - s, m + s, color=color, alpha=0.2)
         if col == "best_fitness":
             ax.axhline(y_max, ls=":", color="k", alpha=0.4)
         ax.set_xlabel("experiments spent")
@@ -92,6 +93,21 @@ def main(records_path: str, landscape_path: str, out_json: str, out_png: str):
         records, y_max, cfg["evaluation"]["top_k"], cfg["experiment"]["budget"]
     )
     rand = {k: v for k, v in summary.items() if k.startswith("random")}
+    act = {k: v for k, v in summary.items() if k.startswith("active")}
+
+    def _agg(g):
+        return {
+            "n_seeds": len(g),
+            "aubc_mean": float(np.mean([v["aubc"] for v in g.values()])),
+            "aubc_std": float(np.std([v["aubc"] for v in g.values()])),
+            "best_fitness_mean": float(
+                np.mean([v["best_fitness"] for v in g.values()])
+            ),
+            "top_hits_mean": float(
+                np.mean([v["top_hits_at_budget"] for v in g.values()])
+            ),
+        }
+
     result = {
         "config": {
             "surrogate": cfg["surrogate"]["kind"],
@@ -105,18 +121,9 @@ def main(records_path: str, landscape_path: str, out_json: str, out_png: str):
             "n_variants": int(len(y)),
             "oracle_max_fitness": y_max,
         },
-        "active": summary["active"],
-        "random": {
-            "n_seeds": len(rand),
-            "aubc_mean": float(np.mean([v["aubc"] for v in rand.values()])),
-            "aubc_std": float(np.std([v["aubc"] for v in rand.values()])),
-            "best_fitness_mean": float(
-                np.mean([v["best_fitness"] for v in rand.values()])
-            ),
-            "top_hits_mean": float(
-                np.mean([v["top_hits_at_budget"] for v in rand.values()])
-            ),
-        },
+        "active": _agg(act),
+        "random": _agg(rand),
+        "per_trajectory": summary,
     }
     Path(out_json).parent.mkdir(parents=True, exist_ok=True)
     with open(out_json, "w") as f:
@@ -124,7 +131,8 @@ def main(records_path: str, landscape_path: str, out_json: str, out_png: str):
     plot_curves(records, y_max, out_png)
     write_manifest("results/provenance.json", inputs=[records_path, landscape_path])
     print(
-        f"active AUBC {result['active']['aubc']:.3f} vs random "
+        f"active AUBC {result['active']['aubc_mean']:.3f}±"
+        f"{result['active']['aubc_std']:.3f} vs random "
         f"{result['random']['aubc_mean']:.3f}±{result['random']['aubc_std']:.3f}"
     )
 

@@ -32,9 +32,9 @@ def _snapshot(labeled: set, y: np.ndarray, top_set: set) -> dict:
     }
 
 
-def run_active(X, y, exp, sur, acq, top_set):
+def run_active(X, y, exp, sur, acq, top_set, seed=None):
     """One AL trajectory. Returns (round snapshots, ordered pick indices)."""
-    rng = np.random.default_rng(exp["seed"])
+    rng = np.random.default_rng(exp["seed"] if seed is None else seed)
     labeled = set(rng.choice(len(X), size=exp["n_init"], replace=False).tolist())
     picks = sorted(labeled)
     records = [_snapshot(labeled, y, top_set)]
@@ -82,24 +82,35 @@ def main(in_parquet: str, out_records: str, out_picks: str):
     X, y = one_hot(df["variant"]), df["fitness"].to_numpy()
     top_set = set(np.argsort(-y)[: cfg["evaluation"]["top_k"]].tolist())
 
-    active_records, active_picks = run_active(X, y, exp, sur, acq, top_set)
-    rows = [{"strategy": "active", **r} for r in active_records]
+    # Active policy is replicated over seeds too — a single trajectory vs a
+    # 20-seed random distribution was the old comparison and it wasn't fair.
+    n_active = exp.get("n_active_seeds", 1)
+    rows, first_picks = [], None
+    best_last = []
+    for s in range(n_active):
+        seed = exp["seed"] + 1000 * s
+        recs, picks = run_active(X, y, exp, sur, acq, top_set, seed=seed)
+        for r in recs:
+            rows.append({"strategy": f"active_{s}", **r})
+        best_last.append(recs[-1]["best_fitness"])
+        if s == 0:
+            first_picks = picks
     for s in range(exp["n_random_seeds"]):
         for r in run_random(X, y, exp, exp["seed"] + 1 + s, top_set):
             rows.append({"strategy": f"random_{s}", **r})
     Path(out_records).parent.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(rows).to_parquet(out_records, index=False)
 
-    # What the active policy chose to measure, in acquisition order —
-    # inspectable evidence of the policy's decisions.
-    picks = df.iloc[active_picks].copy()
+    # What the seed-13 active trajectory chose to measure, in acquisition
+    # order — inspectable evidence of the policy's decisions.
+    picks = df.iloc[first_picks].copy()
     picks["acquisition_order"] = range(len(picks))
     picks["initial_screen"] = picks["acquisition_order"] < exp["n_init"]
     Path(out_picks).parent.mkdir(parents=True, exist_ok=True)
     picks.to_parquet(out_picks, index=True)
     print(
-        f"records: {len(rows)} rows | active spent {len(active_picks)} "
-        f"experiments, best found {active_records[-1]['best_fitness']:.4f}"
+        f"records: {len(rows)} rows | {n_active} active trajectories, "
+        f"best found {min(best_last):.3f}..{max(best_last):.3f}"
     )
 
 

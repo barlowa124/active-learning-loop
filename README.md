@@ -31,22 +31,25 @@ scored against what the experiment would really have returned.
 - **Metrics**: best-fitness-found curve, true top-100 discovery curve, AUBC
   (area under best curve, oracle-normalized), top-100 hit rate at budget.
 
-## Result (seed 13, committed in `results/summary.json`)
+## Result (committed in `results/summary.json`)
 
-| | Active (UCB-GP) | Random (20 seeds) |
+Active policy replicated over **8 seeds** against a 20-seed random baseline —
+same budget, same schedule, both distributions reported:
+
+| | Active (UCB-GP, 8 seeds) | Random (20 seeds) |
 |---|---|---|
-| AUBC | **0.465** | 0.373 ± 0.107 |
-| best fitness found | 5.77 | 5.06 mean (oracle max 8.76) |
-| true top-100 hits at budget | **9** | 0.55 mean |
-| acquired variants with fitness > 1.0 | 312/384 (81%) | ~4% of landscape |
+| AUBC | **0.672 ± 0.100** | 0.373 ± 0.107 |
+| best fitness found, mean | **8.24** (oracle max 8.76) | 5.06 |
+| true top-100 hits at budget, mean | **43.4** | 0.55 |
+| acquired variants with fitness > 1.0 | 81% (seed-13 trajectory) | ~4% of landscape |
 
-Reading it honestly: the policy's *single best find* is only modestly better
-than lucky random draws — GB1's top of landscape is spiky and partly
-luck-driven. But the policy **concentrates experiments on the functional
-region**: ~16x more true top-100 hits discovered, and 81% of chosen
-experiments returned fitness > 1.0. If the goal is "learn where the good
-variants live" — informative experiment selection — the loop works. If the
-goal is one lucky hit, budget matters more than strategy here.
+Reading it honestly: the policy **concentrates experiments on the functional
+region** — ~79x more true top-100 hits than random, and most trajectories
+(6/8) find the oracle-best variant within budget. The weakest seed still
+beats the random mean on AUBC, but trajectory variance is real (0.465..0.772)
+and the bands overlap at the low end — a single AL run is not a guarantee.
+Per-trajectory metrics are in `results/summary.json` under
+`per_trajectory`.
 
 ## Debugging trail (kept, it's the point)
 
@@ -67,9 +70,6 @@ the only tell was the frozen best-fitness curve.
 
 ## Caveats
 
-- Single seeded AL trajectory vs a 20-seed random distribution; the AL
-  curve is one draw, not a mean. Multi-seed AL replication is the honest
-  next step.
 - Oracle = noise-free measured values; real experiments add assay noise the
   surrogate would have to absorb.
 - One-hot encoding sees sites, not structure; sequence-embedding encoders

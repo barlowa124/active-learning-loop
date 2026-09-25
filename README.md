@@ -95,13 +95,12 @@ signal for a protein LM. Requires `.[esm]` extras.
 | best fitness found, mean | 8.24 | **8.31** | 5.06 |
 | top-100 hits at budget, mean | **43.4** | 39.2 | 0.55 |
 
-ESM-2 does **not** beat one-hot on GB1, which is the
-expected answer. A 4-site combinatorial library is already fully
+ESM-2 does **not** beat one-hot on GB1. A 4-site combinatorial library is already fully
 specified by one-hot (every factor the GP needs is a measured coordinate),
 while mean-pooled embeddings of sequences differing in 4 of 56 residues
 are nearly isotropic (median pairwise distance 0.51; kernel scale was set
-to 0.4 from that diagnostic, not tuned on results). Where ESM-2 *does*
-improve: cross-seed consistency. AUBC spread tightens 4x (0.040 vs
+to 0.4 from that diagnostic, not tuned on results). ESM-2 does improve
+cross-seed consistency: AUBC spread tightens 4x (0.040 vs
 0.100) and best-found is marginally higher. Embeddings would be the right
 encoder for landscapes spanning variable regions or requiring
 generalization beyond measured combinations. Here they trade a little
@@ -122,11 +121,10 @@ ESM-2 on AAV performs at the random baseline. The AL advantage
 disappears entirely. Mechanism: GP-UCB works through metric structure,
 and on these landscapes *Hamming distance is the informative metric*:
 fitness correlates with mutation count/composition. Mean-pooled ESM-2
-embeddings smooth over that structure by design (it is what
-makes them generalize for property prediction, and what makes them
-metrically useless for nearest-neighbor-ish landscape exploitation).
-One-hot is the right encoder for oracle-evaluated combinatorial AL;
-embeddings would earn their keep on tasks needing transfer across
+embeddings smooth over that structure by design (the same pooling that makes them generalize for
+property prediction makes them metrically useless for nearest-neighbor-ish landscape exploitation).
+One-hot is the right encoder for oracle-evaluated combinatorial AL.
+Embeddings suit tasks needing transfer across
 proteins or unmeasured regions, which an all-measured oracle cannot
 test. Both ablations committed: `summary_gb1_esm2.json`,
 `summary_aav_esm2.json`.
@@ -144,9 +142,8 @@ hits, best found frozen at the initial draw). Traced to two failures:
    distances are sqrt(2)-sqrt(8)), making candidates nearly indistinguishable.
 
 Fix: fixed hyperparameters matched to the feature metric + log1p target
-transform. The failure mode is documented because silent-NaN acquisition is
-the kind of bug that produces *plausible-looking* wrong results.
-The only tell was the frozen best-fitness curve.
+transform. Silent-NaN acquisition produces *plausible-looking* wrong
+results, and the only tell here was the frozen best-fitness curve.
 
 ## Caveats
 

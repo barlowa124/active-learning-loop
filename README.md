@@ -107,6 +107,30 @@ encoder for landscapes spanning variable regions or requiring
 generalization beyond measured combinations; here they trade a little
 peak-seeking for a lot of stability.
 
+So we ran the same ablation on AAV, where embeddings *should* have an
+edge — the 28-aa region varies at many positions, ESM-2 distance is
+essentially decorrelated from Hamming (~0 spearman), and the median
+pairwise distance is a healthy 1.19 (vs 0.51 on GB1):
+
+| AAV | one-hot + GP | ESM-2 + GP | Random |
+|---|---|---|---|
+| AUBC | **0.604 ± 0.034** | 0.519 ± 0.029 | 0.524 ± 0.076 |
+| best fitness, mean | 7.69 | 6.88 | 6.64 |
+| top-100 hits, mean | **11.9** | 4.0 | 1.5 |
+
+ESM-2 on AAV performs at the random baseline — the AL advantage
+disappears entirely. Mechanism: GP-UCB works through metric structure,
+and on these landscapes *Hamming distance is the informative metric* —
+fitness correlates with mutation count/composition. Mean-pooled ESM-2
+embeddings deliberately smooth over exactly that structure (that's what
+makes them generalize for property prediction, and what makes them
+metrically useless for nearest-neighbor-ish landscape exploitation).
+One-hot is the right encoder for oracle-evaluated combinatorial AL;
+embeddings would earn their keep on tasks needing transfer across
+proteins or unmeasured regions — which an all-measured oracle cannot
+test. Both ablations committed: `summary_gb1_esm2.json`,
+`summary_aav_esm2.json`.
+
 ## Debugging trail (kept, it's the point)
 
 The first run reported active *worse* than random (AUBC 0.167, zero top-100

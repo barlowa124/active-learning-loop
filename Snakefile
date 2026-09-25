@@ -10,6 +10,8 @@ rule all:
         "results/curves_aav.png",
         "results/summary_gb1_esm2.json",
         "results/curves_gb1_esm2.png",
+        "results/summary_aav_esm2.json",
+        "results/curves_aav_esm2.png",
 
 
 rule fetch:
@@ -124,4 +126,32 @@ rule report_gb1_esm2:
         "results/curves_gb1_esm2.png",
     shell:
         "AL_CONFIG={ESM_CFG} {PP} {PY} -m al_loop.evaluate "
+        "{input.records} {input.landscape} {output[0]} {output[1]}"
+
+
+# --- encoder ablation on AAV2: the case where embeddings should help ---
+
+AAV_ESM_CFG = "config/config_aav_esm2.yaml"
+
+
+rule run_aav_esm2:
+    input:
+        rules.prepare_aav.output,
+    output:
+        records="data/processed/records_aav_esm2.parquet",
+        picks="data/processed/active_picks_aav_esm2.parquet",
+    shell:
+        "AL_CONFIG={AAV_ESM_CFG} {PP} {PY} -m al_loop.loop "
+        "{input} {output.records} {output.picks}"
+
+
+rule report_aav_esm2:
+    input:
+        records=rules.run_aav_esm2.output.records,
+        landscape=rules.prepare_aav.output,
+    output:
+        "results/summary_aav_esm2.json",
+        "results/curves_aav_esm2.png",
+    shell:
+        "AL_CONFIG={AAV_ESM_CFG} {PP} {PY} -m al_loop.evaluate "
         "{input.records} {input.landscape} {output[0]} {output[1]}"

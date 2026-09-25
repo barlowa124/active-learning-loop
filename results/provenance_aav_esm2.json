@@ -1,0 +1,20 @@
+{
+  "created_utc": "2026-09-25T16:55:32.273900+00:00",
+  "git": "969b663618+dirty",
+  "versions": {
+    "numpy": "2.0.2",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.6.1"
+  },
+  "config_sha256": "352c3521b499264638b403649f33efbdb575cccab80e8db73c3dc70b68b801b7",
+  "inputs": [
+    {
+      "path": "data/processed/records_aav_esm2.parquet",
+      "sha256": "9d152e070970ac35fef8cc9b600239637cb41b14baaafcddae126172266d2471"
+    },
+    {
+      "path": "data/processed/aav.parquet",
+      "sha256": "cddf084c55dd881635abf6bc6d72d7d7ea0d43be3e552dd6dc522df229a542ec"
+    }
+  ]
+}

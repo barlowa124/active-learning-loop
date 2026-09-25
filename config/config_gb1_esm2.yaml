@@ -1,5 +1,5 @@
 # Encoder ablation on GB1: same landscape, same schedule, only the feature
-# space changes — position-wise one-hot -> ESM-2 embeddings of the variant
+# space changes: position-wise one-hot -> ESM-2 embeddings of the variant
 # substituted into the WT GB1 sequence (bare 4-AA strings carry no signal
 # for a protein LM; context_seq gives the model the rest of the domain).
 # WT sites V39/D40/G41/V54 -> 0-indexed positions 38, 39, 40, 53.

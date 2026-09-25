@@ -1,6 +1,6 @@
 # Second landscape: AAV2 capsid viability (Ogden et al., Science 2019;
 # FLIP mirror). 28-aa mutated region, '*' = stop variants (real dead
-# variants — kept, they are the landscape). Score is log-scale viability,
+# variants, kept since they are the landscape). Score is log-scale viability,
 # already symmetric -> identity transform.
 
 dataset:

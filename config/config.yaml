@@ -16,7 +16,7 @@ experiment:
   batch_size: 24      # variants measured per AL round
   budget: 480         # total experimental budget incl. n_init
   seed: 13
-  n_active_seeds: 8   # AL trajectory replicates — match the random baseline
+  n_active_seeds: 8   # AL trajectory replicates, matched against the random baseline
   n_random_seeds: 20  # random-selection baseline replicates
 
 surrogate:

@@ -48,7 +48,7 @@ def test_random_same_schedule():
 
 
 def test_active_finds_optimum_on_easy_landscape():
-    # sanity that the loop actually learns: on this separable landscape it
+    # sanity that the loop learns: on this separable landscape it
     # should discover the global optimum within the budget
     top = {int(np.argmax(Y))}
     records, _ = run_active(X, Y, EXP, SUR, ACQ, top)

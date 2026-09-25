@@ -1,5 +1,5 @@
 # Encoder ablation on AAV2: the 28-aa mutated_region is long enough to
-# embed directly (no context_seq needed — unlike GB1's 4-AA strings).
+# embed directly (no context_seq needed, unlike GB1's 4-AA strings).
 # Embedding distance is essentially decorrelated from Hamming distance
 # (the embedding sees mutation composition/context, not site count), so
 # this is a real alternative feature space, not a recoding.

@@ -8,7 +8,9 @@ candidates -> repeat until `budget` experiments are spent.
 
 The random baseline follows the identical schedule but picks candidates
 uniformly, replicated `n_random_seeds` times for a distribution. This is
-the honest counterfactual: same budget, same initial set, no model.
+the honest counterfactual: same budget and schedule, no model. (Each
+trajectory — active or random — draws its own initial screen; the
+multi-seed replication is what makes the comparison fair.)
 """
 
 import sys
@@ -120,6 +122,8 @@ def main(in_parquet: str, out_records: str, out_picks: str):
     Path(out_records).parent.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(rows).to_parquet(out_records, index=False)
 
+    if first_picks is None:
+        raise ValueError("n_active_seeds must be >= 1 to record picks")
     # What the seed-13 active trajectory chose to measure, in acquisition
     # order — inspectable evidence of the policy's decisions.
     picks = df.iloc[first_picks].copy()

@@ -26,7 +26,10 @@ def fetch_raw(url: str, out_zip: str) -> Path:
     out = Path(out_zip)
     out.parent.mkdir(parents=True, exist_ok=True)
     if not out.exists():
-        urllib.request.urlretrieve(url, out)
+        tmp = out.with_suffix(out.suffix + ".part")
+        with urllib.request.urlopen(url, timeout=DOWNLOAD_TIMEOUT) as r:
+            tmp.write_bytes(r.read())
+        tmp.rename(out)  # atomic: no truncated zip reused silently
     return out
 
 

@@ -21,6 +21,8 @@ AA_ALPHABET = "ACDEFGHIKLMNPQRSTVWY"  # 20 standard amino acids, fixed order
 def one_hot(variants: pd.Series, alphabet: str = AA_ALPHABET) -> np.ndarray:
     """(n_variants, n_sites * len(alphabet)) one-hot over mutated positions."""
     idx = {aa: i for i, aa in enumerate(alphabet)}
+    if len(variants) == 0:
+        return np.zeros((0, 0), dtype=np.float32)
     n_sites = len(variants.iloc[0])
     X = np.zeros((len(variants), n_sites * len(alphabet)), dtype=np.float32)
     for i, v in enumerate(variants):
@@ -90,10 +92,17 @@ def build_features(variants: pd.Series, encoder_cfg: dict,
     if cache_stem:
         from pathlib import Path
         import hashlib
+        import json
 
         npy = Path(f"{cache_stem}_esm2.npy")
         key_f = Path(f"{cache_stem}_esm2.key")
-        key = hashlib.sha256("\n".join(variants).encode()).hexdigest()
+        # the key must cover every input to the embedding: variant list
+        # AND encoder params — a changed model/context with an unchanged
+        # variant list must not silently reuse stale embeddings
+        key = hashlib.sha256(
+            (json.dumps(encoder_cfg, sort_keys=True)
+             + "\n" + "\n".join(variants)).encode()
+        ).hexdigest()
         if npy.exists() and key_f.exists() and key_f.read_text() == key:
             return np.load(npy)
         X = esm2_embed(variants, **{k: v for k, v in encoder_cfg.items()

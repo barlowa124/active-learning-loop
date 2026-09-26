@@ -74,7 +74,7 @@ descriptor is the only thing that changes (`config/config_aav.yaml`).
 The advantage **shrinks** on AAV. Top-100 hit
 enrichment stays strong (~8x), and every active trajectory's AUBC beats
 the random *mean*, but the bands overlap. The worst active
-trajectory (0.543) is below the best random one (0.646) — the same
+trajectory (0.543) is below the best random one (0.646). The same
 overlap exists on GB1 and is slightly wider there (0.465 vs 0.599,
 gap 0.134). Expected reasons: AAV is 38k variants vs 149k with a
 higher base rate of functional variants (~47% score > 0), so random

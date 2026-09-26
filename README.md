@@ -74,8 +74,9 @@ descriptor is the only thing that changes (`config/config_aav.yaml`).
 The advantage **shrinks** on AAV. Top-100 hit
 enrichment stays strong (~8x), and every active trajectory's AUBC beats
 the random *mean*, but the bands overlap. The worst active
-trajectory (0.543) is below the best random one (0.646), which never
-happened on GB1. Expected reasons: AAV is 38k variants vs 149k with a
+trajectory (0.543) is below the best random one (0.646) — the same
+overlap exists on GB1 and is slightly wider there (0.465 vs 0.599,
+gap 0.134). Expected reasons: AAV is 38k variants vs 149k with a
 higher base rate of functional variants (~47% score > 0), so random
 screening catches more. The 588-dim one-hot over a rougher landscape is
 a harder GP regression than GB1's 80-dim near-orthogonal space. The
@@ -100,7 +101,7 @@ specified by one-hot (every factor the GP needs is a measured coordinate),
 while mean-pooled embeddings of sequences differing in 4 of 56 residues
 are nearly isotropic (median pairwise distance 0.51; kernel scale was set
 to 0.4 from that diagnostic, not tuned on results). ESM-2 does improve
-cross-seed consistency: AUBC spread tightens 4x (0.040 vs
+cross-seed consistency: AUBC spread tightens 2.5x in std (0.040 vs
 0.100) and best-found is marginally higher. Embeddings would be the right
 encoder for landscapes spanning variable regions or requiring
 generalization beyond measured combinations. Here they trade a little

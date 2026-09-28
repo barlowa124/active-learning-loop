@@ -17,7 +17,7 @@ DAG runs fetch -> parse -> AL-vs-random simulation -> summary report on:
 
 ## The question
 
-This is the loop experimental science wants closed: label a small
+The loop experimental science wants closed: label a small
 random screen, fit a surrogate, let an acquisition function pick the next
 most informative batch, repeat under a fixed budget. The landscape is fully
 measured, so the oracle is ground truth. Every acquisition decision is
@@ -108,7 +108,7 @@ generalization beyond measured combinations. Here they trade a little
 peak-seeking for a lot of stability.
 
 The same ablation on AAV is where embeddings *should* have an
-edge. The 28-aa region varies at many positions, ESM-2 distance is
+edge. The 28-aa region is sequence-diverse, ESM-2 distance is
 decorrelated from Hamming (~0 spearman), and median pairwise distance
 is 1.19 (vs 0.51 on GB1):
 
@@ -161,10 +161,10 @@ results, and the only tell here was the frozen best-fitness curve.
 PYTHONPATH=src .venv/bin/python -m pytest tests/ -q
 ```
 
-`AL_CONFIG` env var selects an alternate config; `config/config_aav.yaml`
+`AL_CONFIG` env var selects an alternate config. `config/config_aav.yaml`
 is the AAV descriptor used by the `*_aav` Snakefile rules. Results:
 `results/summary{,_aav}.json`, `results/curves{,_aav}.png`,
-`results/provenance{,_aav}.json`; per-round records and the exact
+`results/provenance{,_aav}.json`. Per-round records and the exact
 acquisition order the policy chose are in `data/processed/` (regenerable,
 gitignored).
 

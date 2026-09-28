@@ -178,3 +178,8 @@ dropped with a logged count (245,716 of 284,009; the dropped rows are
 structural variants outside the fixed-width substitution landscape this
 encoder covers). Downloaded zips are gitignored. Parsed parquets are
 regenerable intermediates.
+
+## Related work
+
+- [protein-diffusion](https://github.com/barlowa124/protein-diffusion) is scored against the same GB1 measured oracle; the two results are directly comparable.
+- [dti-fusion](https://github.com/barlowa124/dti-fusion) and [protein-design-ops](https://github.com/barlowa124/protein-design-ops) use the same ESM-2 embeddings that lose to one-hot here; the negative result is committed in `results/`.

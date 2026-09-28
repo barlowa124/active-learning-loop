@@ -62,22 +62,33 @@ def esm2_embed(variants: pd.Series, model_name: str = "facebook/esm2_t6_8M_UR50D
         apply_context(v, context_seq, context_sites) if context_seq else v
         for v in variants
     ]
+    # Per-sequence shared cache (vendored esm_cache): embeddings reuse
+    # across repos and across variant-list changes. Keyed on the exact
+    # string the model sees, post context substitution.
+    from al_loop.esm_cache import get_many, put
+    values, misses = get_many("esm2-embed", model_name, seqs)
+    if not misses:
+        return np.stack(values).astype(np.float32)
     device = (
         "mps" if torch.backends.mps.is_available()
         else "cuda" if torch.cuda.is_available() else "cpu"
     )
     tok = AutoTokenizer.from_pretrained(model_name)
     model = AutoModel.from_pretrained(model_name).to(device).eval()
-    out = np.zeros((len(seqs), model.config.hidden_size), dtype=np.float32)
+    out = np.zeros((len(misses), model.config.hidden_size), dtype=np.float32)
     with torch.no_grad():
-        for i in range(0, len(seqs), batch_size):
-            enc = tok(seqs[i : i + batch_size], return_tensors="pt",
+        for i in range(0, len(misses), batch_size):
+            chunk = misses[i : i + batch_size]
+            enc = tok([seqs[j] for j in chunk], return_tensors="pt",
                       padding=True).to(device)
             hidden = model(**enc).last_hidden_state  # (b, L, d)
             mask = enc["attention_mask"].unsqueeze(-1).float()
             emb = (hidden * mask).sum(1) / mask.sum(1)
             out[i : i + batch_size] = emb.cpu().numpy()
-    return out
+    for k, j in enumerate(misses):
+        values[j] = out[k]
+        put("esm2-embed", model_name, seqs[j], out[k])
+    return np.stack(values).astype(np.float32)
 
 
 def build_features(variants: pd.Series, encoder_cfg: dict,

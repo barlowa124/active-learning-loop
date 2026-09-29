@@ -1,3 +1,7 @@
+> **This repository has moved.** Active development continues in [barlowa124/protein-ml](https://github.com/barlowa124/protein-ml) under [`active_learning_loop/`](https://github.com/barlowa124/protein-ml/tree/main/active_learning_loop). This repo is archived and kept for link stability.
+
+---
+
 # active-learning-loop
 
 Simulated active-learning experiment selection over a **real, fully measured
